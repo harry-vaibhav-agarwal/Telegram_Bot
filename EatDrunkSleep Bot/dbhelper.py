@@ -6,23 +6,27 @@ class DBHelper:
         self.conn=sqlite3.connect(dbname)
 
     def setup(self):
-        stmt="CREATE TABLE IF NOT EXISTS items (description text,owner text)"
-        self.conn.execute(stmt)
+        tblstmt="CREATE TABLE IF NOT EXISTS items (description text,owner text)"
+        itemidx="CREATE INDEX IF NOT EXISTS itemIndex ON items (description ASC)"
+        ownidx="CREATE INDEX IF NOT EXISTS ownIndex on items (owner ASC)"
+        self.conn.execute(tblstmt)
+        self.conn.execute(itemidx)
+        self.conn.execute(ownidx)
         self.conn.commit()
 
-    def add_item(self,item_text,owner):
+    def add_item(self,item_text=None,owner=None):
         stmt="INSERT INTO items (description,owner) VALUES (?,?)";
         args =(item_text,owner)
         self.conn.execute(stmt,args)
         self.conn.commit()
 
-    def delete_item(self,item_text,owner):
+    def delete_item(self,item_text=None,owner=None):
         stmt="DELETE FROM items WHERE description = (?) AND owner = (?) "
         args=(item_text,owner)
         self.conn.execute(stmt,args)
         self.conn.commit()
 
-    def get_items(self,owner):
+    def get_items(self,owner=None):
         stmt="SELECT description FROM items WHERE owner=(?)"
         args=(owner,)
         return [x[0] for x in self.conn.execute(stmt,args)]
