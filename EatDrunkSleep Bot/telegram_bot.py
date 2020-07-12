@@ -3,10 +3,14 @@ import requests,json
 from config import TELEGRAM_SEND_MESSAGE_URL
 from config import TELEGRAM_SEND_VIDEO_URL
 
+
+
+
 class TelegramBot:
 
-    def __init__(self):
+    def __init__(self,db):
 
+        self.db=db
         self.chat_id = None
         self.text = None
         self.first_name = None
@@ -17,8 +21,8 @@ class TelegramBot:
         self.sticker=None
         self.photo=None
         self.command=None
-        self.commandlist=["/start","/add_item","/delete_item","/get_items","/done","/video"]
-        self.commandlistdescription=['MAKE YOUR TODO LIST','ADD ITEMS TO YOUR TODOLIST','DELETE ITEMS','GET ITEMS','FINISH','REQUEST A VIDEO']
+        self.commandlist=[('/start','MAKE YOUR TODO LIST'),("/add_item",'ADD ITEMS TO YOUR TODOLIST.SEND THE ITEM_NAME ALONG WITH COMMAND'),("/delete_item","DELETE ITEM"),("/get_items","GET ITEMS"),("/done","FINISH"),("/video","REQUEST A VIDEO")]
+        self.commandtype=['/start','/add_item','/delete_item','/get_items','/done','/video']
 
     def parse_webhook_data(self, data):
 
@@ -62,8 +66,8 @@ class TelegramBot:
 
 
             if self.incoming_message_text in ('hey','hi','hello'):
-                self.outgoing_message_text = 'HI {} WELCOME TO TELEGRAM UTILITY BOT '.format(self.first_name.upper())
-                success = self.send_message()
+                self.outgoing_message_text = 'HI {} WELCOME TO TELEGRAM UTILITY BOT  .YOU CAN SEND ME NORMAL MESSAGES OR COMMANDS LISTED BELOW :\n'.format(self.first_name.upper())
+                success = self.send_message(command_list=self.commandlist)
 
 
             else :
@@ -73,6 +77,12 @@ class TelegramBot:
                 else:
                     user=self.first_name
 
+                """items=self.db.get_items(self.chat_id)
+
+                if self.incoming_message_text in items:
+                    self.command='/delete_item'+" "+self.incoming_message_text
+                    success=self.handle_command()
+                else:"""
                 self.outgoing_message_text ='@{} Echoing back {} '.format(user,self.incoming_message_text.upper())
                 success=self.send_message()
 
@@ -108,8 +118,19 @@ class TelegramBot:
         else :
             return success
 
-    def send_message(self,reply_markup=None):
-        res = requests.get(TELEGRAM_SEND_MESSAGE_URL.format(self.chat_id, self.outgoing_message_text,''))
+    def send_message(self,reply_markup=None,command_list=None):
+
+        if reply_markup is None:
+            reply_markup = ''
+
+        str=""
+        if command_list is not None :
+            for command,desc in command_list:
+                str=str+"\n" + command +  " : " + desc
+
+        self.outgoing_message_text=self.outgoing_message_text+str
+
+        res = requests.get(TELEGRAM_SEND_MESSAGE_URL.format(self.chat_id, self.outgoing_message_text,reply_markup))
         print(res)
         return True if res.status_code == 200 else False
 
@@ -119,22 +140,65 @@ class TelegramBot:
         print(res)
         return True if res.status_code == 200 else False
 
-
+    def build_keyboard(items):
+        keyboard = [[item] for item in items]
+        reply_markup = {"keyboard": keyboard, "one_time_keyboard": True}
+        return json.dumps(reply_markup)
 
     def handle_command(self):
-        if self.command in self.commandlist:
+        if self.command in self.commandtype:
             if self.command == '/video':
                 self.outgoing_message_text='Here is a video for you'
                 self.send_message()
-                self.send_video()
+                return self.send_video()
             else :
-                pass
+
+                items = self.db.get_items(self.chat_id)
+                if self.command == '/start':
+                    self.outgoing_message_text="Let's get started with our todolist\n"
+                    return self.send_message(self.commandlist)
+
+                elif self.command == '/done':
+
+                    self.outgoing_message_text = 'HERE IS YOUR LIST :'
+                    for item in items:
+                        self.outgoing_message_text =self.outgoing_message_text + item.upper()+"\n"
+                        return self.send_message()
+
+
+                elif self.command == '/delete_item':
+                    keyboard = self.build_keyboard(items)
+                    self.outgoing_message_text='SELECT AN ITEM TO DELETE\n'
+                    return self.send_message(reply_markup=keyboard)
+
+                elif self.command.startswith('/delete_item'):
+                    text = self.command.partition("/delete_item ")[2].lower()
+                    self.db.delete_item(text,self.chat_id)
+                    self.outgoing_message_text = "\n".join(items)
+                    return self.send_message()
+
+                elif self.command.startswith('/add_item'):
+                    text=self.command.partition("/add_item ")[2].lower()
+                    self.db.add_item(text, self.chat_id)
+                    items = self.db.get_items(self.chat_id)  ##
+                    self.outgoing_message_text = "\n".join(items)
+                    return self.send_message()
+
+                else:
+                    self.outgoing_message_text = "\n".join(items)
+                    return self.send_message()
+
+
 
         else:
             self.outgoing_message_text = 'Invalid command!'
             self.send_message()
 
 
+
+
+
     @staticmethod
     def init_webhook(url):
-        requests.get(url)    # setting up the webhook any request came to localhost
+        requests.get(url) # setting up the webhook any request came to localhost
+

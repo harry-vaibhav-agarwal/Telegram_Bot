@@ -14,7 +14,7 @@ db.setup()
 def index():
     req = request.get_json()
     print(json.dumps(req))
-    bot = TelegramBot()
+    bot = TelegramBot(db)
     bot.parse_webhook_data(req)
     success = bot.action()
     return jsonify(success=success) # TODO: Success should reflect the success of the reply  it is important else it will continue to send up message
