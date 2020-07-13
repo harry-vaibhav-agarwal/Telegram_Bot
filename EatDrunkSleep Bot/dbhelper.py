@@ -7,7 +7,7 @@ class DBHelper:
 
     def setup(self):
         tblstmt="CREATE TABLE IF NOT EXISTS items (description text,owner text)"
-        itemidx="CREATE INDEX IF NOT EXISTS itemIndex ON items (description ASC)"
+        itemidx="CREATE UNIQUE INDEX IF NOT EXISTS itemIndex ON items (description ASC)"
         ownidx="CREATE INDEX IF NOT EXISTS ownIndex on items (owner ASC)"
         self.conn.execute(tblstmt)
         self.conn.execute(itemidx)

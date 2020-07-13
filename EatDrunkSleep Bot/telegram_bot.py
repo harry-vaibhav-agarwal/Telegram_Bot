@@ -160,15 +160,16 @@ class TelegramBot:
                 items = self.db.get_items(owner=self.chat_id)
                 if self.command == '/start':
                     self.outgoing_message_text="Let's get started with our todolist\n"
-                    return self.send_message(self.commandlist)
+                    return self.send_message(command_list=self.commandlist)
 
                 elif self.command == '/done':
 
-                    self.outgoing_message_text = 'HERE IS YOUR LIST :'
+                    self.outgoing_message_text = 'HERE IS YOUR LIST :\n'
                     items=self.db.get_items(owner=self.chat_id)
                     for item in items:
                         self.outgoing_message_text =self.outgoing_message_text + item.upper()+"\n"
-                        return self.send_message()
+
+                    return self.send_message()
 
 
                 elif self.command == '/delete_item':
@@ -185,7 +186,11 @@ class TelegramBot:
 
                 elif self.command.startswith('/add_item'):
                     text=self.command.partition("/add_item ")[2].lower()
-                    self.db.add_item(item_text=text, owner=self.chat_id)
+                    try:
+                        self.db.add_item(item_text=text, owner=self.chat_id)
+                    except:
+                        pass
+
                     items = self.db.get_items(owner=self.chat_id)  ##
                     self.outgoing_message_text = "\n".join(items)
                     return self.send_message()
