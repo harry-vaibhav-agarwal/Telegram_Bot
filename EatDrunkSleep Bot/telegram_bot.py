@@ -70,7 +70,7 @@ class TelegramBot:
 
 
             if self.incoming_message_text in ('hey','hi','hello'):
-                self.outgoing_message_text = 'HI {} WELCOME TO TELEGRAM UTILITY BOT  .YOU CAN SEND ME NORMAL MESSAGES OR COMMANDS LISTED BELOW :\n'.format(self.first_name.upper())
+                self.outgoing_message_text = 'HI {} \n WELCOME TO TELEGRAM UTILITY BOT\n.YOU CAN SEND ME NORMAL MESSAGES OR COMMANDS LISTED BELOW :\n'.format(self.first_name.upper())
                 success = self.send_message(command_list=self.commandlist)
 
 
